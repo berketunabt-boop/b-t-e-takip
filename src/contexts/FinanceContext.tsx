@@ -90,6 +90,7 @@ interface FinanceContextType {
   subscriptions: Subscription[];
   savingsGoals: SavingsGoal[];
   exchangeRates: ExchangeRates;
+  isLoadingRates: boolean;
   
   addTransaction: (t: Omit<Transaction, "id">) => void;
   addCreditCard: (c: Omit<CreditCard, "id">) => void;
@@ -155,7 +156,7 @@ const defaultSavingsGoals: SavingsGoal[] = [
   { id: uid(), name: "Ev Tadilatı", targetAmount: 200000, currentAmount: 45000, icon: "🏠" },
 ];
 
-const defaultExchangeRates: ExchangeRates = { USD: 38.45, EUR: 41.20, ALTIN: 3480 };
+const defaultExchangeRates: ExchangeRates = { USD: 38.45, EUR: 41.20, ALTIN: 3000 };
 
 const defaultWorkspaceId = uid();
 const defaultWorkspace: Workspace = {
@@ -186,7 +187,43 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   });
   
   const [activeBudgetId, setActiveBudgetId] = useState<string | null>(null);
-  const [exchangeRates] = useState<ExchangeRates>(defaultExchangeRates);
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRates>(defaultExchangeRates);
+  const [isLoadingRates, setIsLoadingRates] = useState(true);
+
+  // Fetch exchange rates on mount
+  useEffect(() => {
+    let isMounted = true;
+    const fetchRates = async () => {
+      try {
+        setIsLoadingRates(true);
+        const res = await fetch("https://api.exchangerate-api.com/v4/latest/USD");
+        if (!res.ok) throw new Error("Ağ hatası");
+        const data = await res.json();
+        
+        // Data gives rates relative to USD.
+        // so to get USD to TRY: data.rates.TRY
+        // to get EUR to TRY: data.rates.TRY / data.rates.EUR
+        if (isMounted && data && data.rates && data.rates.TRY) {
+          const usdToTry = data.rates.TRY;
+          const eurToTry = data.rates.TRY / data.rates.EUR;
+
+          setExchangeRates(prev => ({
+            ...prev,
+            USD: usdToTry,
+            EUR: eurToTry,
+            ALTIN: 3000 // Sabit (Mocked)
+          }));
+        }
+      } catch (err) {
+        console.error("Kur yükleme hatası:", err);
+      } finally {
+        if (isMounted) setIsLoadingRates(false);
+      }
+    };
+    fetchRates();
+
+    return () => { isMounted = false; };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("finansapp_workspaces", JSON.stringify(workspaces));
@@ -304,6 +341,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       subscriptions: currentSubscriptions, 
       savingsGoals: currentSavingsGoals, 
       exchangeRates,
+      isLoadingRates,
       addTransaction, addCreditCard, addInstallment, addInvestment, addSubscription, addSavingsGoal,
       updateSavingsGoal, removeTransaction, removeSubscription, resetData,
       totalAssets, totalDebts, netWorth,

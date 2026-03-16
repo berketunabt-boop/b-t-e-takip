@@ -14,7 +14,11 @@ const PIE_COLORS = [
 ];
 
 const Dashboard = () => {
-  const { transactions, totalAssets, totalDebts, netWorth, creditCards, subscriptions } = useFinance();
+  const { activeWorkspace, transactions, creditCards, subscriptions } = useFinance();
+
+  const totalIncome = useMemo(() => transactions.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0), [transactions]);
+  const totalExpense = useMemo(() => transactions.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0), [transactions]);
+  const netTransactions = totalIncome - totalExpense;
 
   const monthlyData = useMemo(() => {
     const months = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
@@ -79,47 +83,71 @@ const Dashboard = () => {
 
   const fmt = (n: number) => new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 0 }).format(n);
 
+  if (!activeWorkspace) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center animate-fade-in-up">
+        <div className="h-24 w-24 bg-muted/50 rounded-full flex items-center justify-center mb-6">
+          <Wallet className="h-12 w-12 text-muted-foreground" />
+        </div>
+        <h2 className="text-3xl font-bold tracking-tight text-foreground mb-3">Çalışma Alanı Bulunamadı</h2>
+        <p className="text-muted-foreground max-w-md mx-auto mb-8">
+          Finansal verilerinizi ve özet grafiklerinizi görüntüleyebilmek için lütfen sol menüden bir çalışma alanı seçin veya yepyeni bir bütçe planı oluşturun.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <h2 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h2>
+    <div className="space-y-6 md:space-y-8 animate-fade-in-up pb-8">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight text-foreground">Aylık Özet</h2>
+        <p className="text-muted-foreground mt-1">Sadece bu çalışma alanı kapsamındaki işlemler görüntülenmektedir.</p>
+      </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="relative overflow-hidden group hover:-translate-y-1 hover:shadow-[0_10px_30px_-10px_rgba(34,197,94,0.15)] transition-all duration-500 ease-in-out border-white/5 hover:border-white/20 bg-[#0a0f1c]/80 backdrop-blur-xl">
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity"></div>
+          <CardContent className="pt-6 relative z-10">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Toplam Varlıklar</p>
-                <p className="text-2xl font-bold text-foreground">{fmt(totalAssets)}</p>
+                <p className="text-sm font-medium text-slate-400 mb-1">Toplam Gelir</p>
+                <p className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-emerald-400 drop-shadow-[0_2px_10px_rgba(16,185,129,0.2)]">{fmt(totalIncome)}</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-foreground" />
+              <div className="h-14 w-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center ring-1 ring-emerald-500/30 group-hover:ring-emerald-400/60 group-hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all duration-300">
+                <TrendingUp className="h-7 w-7 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+
+        <Card className="relative overflow-hidden group hover:-translate-y-1 hover:shadow-[0_10px_30px_-10px_rgba(239,68,68,0.15)] transition-all duration-500 ease-in-out border-white/5 hover:border-white/20 bg-[#0a0f1c]/80 backdrop-blur-xl">
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-rose-500 to-transparent opacity-70 group-hover:opacity-100 transition-opacity"></div>
+          <CardContent className="pt-6 relative z-10">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Toplam Borçlar</p>
-                <p className="text-2xl font-bold text-destructive">{fmt(totalDebts)}</p>
+                <p className="text-sm font-medium text-slate-400 mb-1">Toplam Gider</p>
+                <p className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-rose-400 drop-shadow-[0_2px_10px_rgba(244,63,94,0.2)]">{fmt(totalExpense)}</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center">
-                <TrendingDown className="h-6 w-6 text-destructive" />
+              <div className="h-14 w-14 rounded-2xl bg-rose-500/10 flex items-center justify-center ring-1 ring-rose-500/30 group-hover:ring-rose-400/60 group-hover:shadow-[0_0_15px_rgba(244,63,94,0.3)] transition-all duration-300">
+                <TrendingDown className="h-7 w-7 text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.8)]" />
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+
+        <Card className={`relative overflow-hidden group hover:-translate-y-1 ${netTransactions >= 0 ? 'hover:shadow-[0_10px_30px_-10px_rgba(59,130,246,0.15)]' : 'hover:shadow-[0_10px_30px_-10px_rgba(239,68,68,0.15)]'} transition-all duration-500 ease-in-out border-white/5 hover:border-white/20 bg-[#0a0f1c]/80 backdrop-blur-xl`}>
+          <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-${netTransactions >= 0 ? 'cyan-500' : 'rose-500'} to-transparent opacity-70 group-hover:opacity-100 transition-opacity`}></div>
+          <CardContent className="pt-6 relative z-10">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Net Durum</p>
-                <p className={`text-2xl font-bold ${netWorth >= 0 ? "text-foreground" : "text-destructive"}`}>{fmt(netWorth)}</p>
+                <p className="text-sm font-medium text-slate-400 mb-1">Net Durum</p>
+                <p className={`text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white ${netTransactions >= 0 ? 'to-cyan-400 drop-shadow-[0_2px_10px_rgba(34,211,238,0.2)]' : 'to-rose-400 drop-shadow-[0_2px_10px_rgba(244,63,94,0.2)]'}`}>
+                  {netTransactions > 0 ? "+" : ""}{fmt(netTransactions)}
+                </p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center">
-                <Wallet className="h-6 w-6 text-foreground" />
+              <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ring-1 transition-all duration-300 ${netTransactions >= 0 ? "bg-cyan-500/10 ring-cyan-500/30 group-hover:ring-cyan-400/60 group-hover:shadow-[0_0_15px_rgba(34,211,238,0.3)]" : "bg-rose-500/10 ring-rose-500/30 group-hover:ring-rose-400/60 group-hover:shadow-[0_0_15px_rgba(244,63,94,0.3)]"}`}>
+                <Wallet className={`h-7 w-7 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)] ${netTransactions >= 0 ? "text-cyan-400" : "text-rose-400"}`} />
               </div>
             </div>
           </CardContent>
@@ -127,61 +155,89 @@ const Dashboard = () => {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader><CardTitle className="text-base">Aylık Gelir vs Gider</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v: number) => fmt(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "hsl(var(--foreground))" }} />
-                <Bar dataKey="Gelir" fill="hsl(150, 60%, 45%)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Gider" fill="hsl(350, 65%, 55%)" radius={[4, 4, 0, 0]} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+        <Card className="group hover:-translate-y-1 hover:shadow-[0_15px_40px_-10px_rgba(59,130,246,0.15)] transition-all duration-500 ease-out border-white/5 hover:border-white/20 bg-[#0a0f1c]/80 backdrop-blur-xl overflow-hidden relative">
+          <CardHeader className="bg-white/[0.02] border-b border-white/5 pb-4">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2 text-slate-200">
+              <span className="w-1.5 h-6 bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.6)] rounded-full"></span>
+              Aylık Gelir vs Gider Trendi
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6 px-2 sm:px-6 relative z-10">
+            <ResponsiveContainer width="100%" height={320}>
+              <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.3} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 13, fontWeight: 500 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 13 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+                <Tooltip 
+                  formatter={(v: number) => [fmt(v), undefined]} 
+                  cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                  contentStyle={{ background: "rgba(10,15,28,0.9)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, boxShadow: '0 0 20px rgba(6,182,212,0.2)', color: "#f8fafc", fontWeight: 500 }} 
+                />
+                <Bar dataKey="Gelir" fill="#34d399" radius={[6, 6, 0, 0]} maxBarSize={40} />
+                <Bar dataKey="Gider" fill="#fb7185" radius={[6, 6, 0, 0]} maxBarSize={40} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader><CardTitle className="text-base">Harcama Dağılımı</CardTitle></CardHeader>
-          <CardContent>
+        <Card className="group hover:-translate-y-1 hover:shadow-[0_15px_40px_-10px_rgba(168,85,247,0.15)] transition-all duration-500 ease-out border-white/5 hover:border-white/20 bg-[#0a0f1c]/80 backdrop-blur-xl overflow-hidden relative">
+          <CardHeader className="bg-white/[0.02] border-b border-white/5 pb-4">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2 text-slate-200">
+              <span className="w-1.5 h-6 bg-violet-500 shadow-[0_0_10px_rgba(139,92,246,0.6)] rounded-full"></span>
+              Kategori Dağılımı (Giderler)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6 relative z-10">
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
-                <Pie data={categoryData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={3} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                <Pie data={categoryData} cx="50%" cy="50%" innerRadius={70} outerRadius={110} paddingAngle={4} stroke="none" dataKey="value" label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}>
                   {categoryData.map((_, i) => (
-                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} className="hover:opacity-80 transition-opacity duration-300 outline-none" />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v: number) => fmt(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "hsl(var(--foreground))" }} />
+                <Tooltip 
+                  formatter={(v: number) => [fmt(v), 'Harcama']} 
+                  contentStyle={{ background: "rgba(10,15,28,0.9)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, boxShadow: '0 0 20px rgba(139,92,246,0.2)', color: "#f8fafc", fontWeight: 500 }} 
+                />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
-      {/* Daily Chart */}
-      <Card>
-        <CardHeader><CardTitle className="text-base">Son 7 Günlük Aktivite</CardTitle></CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={dailyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-              <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickFormatter={v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v} />
-              <Tooltip formatter={(v: number) => fmt(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "hsl(var(--foreground))" }} />
-              <Bar dataKey="Gelir" fill="hsl(220, 70%, 55%)" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Gider" fill="hsl(330, 60%, 50%)" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+        {/* Daily Chart */}
+        <Card className="lg:col-span-2 group hover:-translate-y-1 hover:shadow-[0_15px_40px_-10px_rgba(14,165,233,0.15)] transition-all duration-500 ease-out border-white/5 hover:border-white/20 bg-[#0a0f1c]/80 backdrop-blur-xl overflow-hidden relative">
+          <CardHeader className="bg-white/[0.02] border-b border-white/5 pb-3">
+            <CardTitle className="text-base font-semibold text-slate-200">Son 7 Günlük Aktivite</CardTitle>
+          </CardHeader>
+          <CardContent className="px-2 sm:px-6 pt-4 relative z-10">
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={dailyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.2} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 12 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 12 }} tickFormatter={v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v} />
+                <Tooltip 
+                  formatter={(v: number) => [fmt(v), undefined]} 
+                  cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                  contentStyle={{ background: "rgba(10,15,28,0.9)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, color: "#f8fafc", fontSize: 13, boxShadow: '0 0 15px rgba(14,165,233,0.3)' }} 
+                />
+                <Bar dataKey="Gelir" fill="#38bdf8" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                <Bar dataKey="Gider" fill="#fb7185" radius={[4, 4, 0, 0]} maxBarSize={30} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
-      {/* Upcoming Payments */}
-      <Card>
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><AlertCircle className="h-4 w-4" /> Yaklaşan Ödemeler</CardTitle></CardHeader>
-        <CardContent>
+        {/* Upcoming Payments */}
+        <Card className="group hover:-translate-y-1 hover:shadow-[0_15px_40px_-10px_rgba(249,115,22,0.15)] transition-all duration-500 ease-out border-white/5 hover:border-white/20 bg-[#0a0f1c]/80 backdrop-blur-xl overflow-hidden relative">
+          <CardHeader className="bg-white/[0.02] border-b border-white/5 pb-3">
+            <CardTitle className="text-base font-semibold flex items-center gap-2 text-slate-200">
+              <AlertCircle className="h-4 w-4 text-orange-400 drop-shadow-[0_0_5px_rgba(251,146,60,0.8)]" /> Yaklaşan Ödemeler
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4 relative z-10">
           {upcomingPayments.length === 0 ? (
             <p className="text-sm text-muted-foreground">Yaklaşan ödeme bulunmuyor.</p>
           ) : (
@@ -199,6 +255,7 @@ const Dashboard = () => {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };

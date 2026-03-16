@@ -448,8 +448,8 @@ export const ContextualHotbar = () => {
   if (!actions) return null;
 
   return (
-    <div className="sticky top-14 z-30 w-full border-b border-border/50 bg-muted/30 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex items-center px-4 h-10 gap-2 overflow-x-auto scrollbar-none">
+    <div className="sticky top-16 z-30 w-full border-b border-white/5 bg-background/40 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.1)] supports-[backdrop-filter]:bg-background/20">
+      <div className="flex items-center px-4 h-12 gap-2 overflow-x-auto scrollbar-none">
         {actions}
       </div>
     </div>
