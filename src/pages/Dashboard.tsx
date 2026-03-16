@@ -3,7 +3,7 @@ import { useFinance } from "@/contexts/FinanceContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { TrendingUp, TrendingDown, Wallet, AlertCircle } from "lucide-react";
-import { format, parseISO, isBefore, addDays } from "date-fns";
+import { format, parseISO, isBefore, addDays, subDays } from "date-fns";
 import { tr } from "date-fns/locale";
 
 const PIE_COLORS = [
@@ -37,6 +37,20 @@ const Dashboard = () => {
       map.set(t.category, (map.get(t.category) || 0) + t.amount);
     });
     return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [transactions]);
+
+  const dailyData = useMemo(() => {
+    const today = new Date();
+    const days = Array.from({ length: 7 }).map((_, i) => subDays(today, 6 - i));
+    return days.map(d => {
+      const dateStr = format(d, "yyyy-MM-dd");
+      const dayTx = transactions.filter(t => t.date === dateStr);
+      return {
+        name: format(d, "dd MMM", { locale: tr }),
+        Gelir: dayTx.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0),
+        Gider: dayTx.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0),
+      };
+    });
   }, [transactions]);
 
   const upcomingPayments = useMemo(() => {
@@ -146,6 +160,23 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Daily Chart */}
+      <Card>
+        <CardHeader><CardTitle className="text-base">Son 7 Günlük Aktivite</CardTitle></CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={dailyData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
+              <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickFormatter={v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v} />
+              <Tooltip formatter={(v: number) => fmt(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "hsl(var(--foreground))" }} />
+              <Bar dataKey="Gelir" fill="hsl(220, 70%, 55%)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Gider" fill="hsl(330, 60%, 50%)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
 
       {/* Upcoming Payments */}
       <Card>
